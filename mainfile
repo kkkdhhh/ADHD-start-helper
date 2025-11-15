@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>ADHD Easy Start – v16</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #eef0ff;
+    padding: 30px;
+    text-align: center;
+    transition: 0.3s;
+  }
+  body.dark { background: #1e1e2f; color: #f1f1f1; }
+
+  /* 왼쪽 패널 */
+  #left-panel {
+    position: fixed; top: 20px; left: 20px;
+    width: 260px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 15px;
+  }
+
+  /* 칭찬 메시지 */
+  .praise-msg {
+    background: #ffe066; color: black;
+    padding: 20px 24px; border-radius: 14px;
+    font-size: 36px; font-weight: bold;
+    animation: fadeout 2.2s forwards ease-out;
+  }
+  @keyframes fadeout {
+    0% {opacity:1; transform:translateY(0);}
+    70%{opacity:1;}
+    100%{opacity:0; transform:translateY(-16px);}
+  }
+
+  .badge { background: gold; padding:6px 10px; border-radius:6px; font-size:22px; width:fit-content; margin-bottom:4px; }
+  .badge-big { background: gold; padding:10px 14px; border-radius:10px; font-size:40px; width:fit-content; margin-bottom:4px; }
+
+  /* 가운데 컨테이너 */
+  .container {
+    width: 550px; margin: 0 auto;
+    background:white; padding:25px;
+    border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,0.1);
+    position:relative; z-index:5;
+  }
+  body.dark .container { background:#2c2c3b; }
+
+  /* 오른쪽 메모 패널 – 다크모드 완전 적용 */
+  #right-panel {
+    position: fixed;
+    top: 30px;
+    left: calc(50% + 330px);
+    width: 260px;
+    background: white;
+    color: black;
+    padding: 14px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+    pointer-events: none; 
+    z-index: 1;
+  }
+
+  /* ★ 다크모드 반영 */
+  body.dark #right-panel {
+    background: #2c2c3b;
+    color: #f1f1f1;
+  }
+  body.dark .memo-item {
+    background: #3d3d4e !important;
+    color: #f1f1f1 !important;
+  }
+
+  #right-panel * { pointer-events:auto; position:relative; z-index:9999; }
+
+  #memo-input {
+    width:90%; padding:8px; border-radius:6px;
+    border:1px solid #aaa; margin-bottom:6px;
+  }
+  #memo-list { margin-top: 12px; }
+  .memo-item {
+    background:#f7f7f7; padding:6px;
+    border-radius:6px; margin-bottom:6px;
+    display:flex; justify-content:space-between;
+  }
+  .memo-del { cursor:pointer; color:red; font-size:14px; }
+
+  /* 타이머 */
+  #circle-wrapper {
+    position: relative;
+    width: 300px; height: 300px;
+    margin: 25px auto;
+    display: none;
+  }
+  svg { width:300px; height:300px; transform:rotate(-90deg); }
+  #circle-bg { stroke:#bbb; stroke-width:14; fill:none; }
+  body.dark #circle-bg { stroke:#555; }
+  #circle-progress { stroke:#6c63ff; stroke-width:14; fill:none; stroke-linecap:round; transition:stroke-dashoffset 1s linear; }
+  body.dark #circle-progress { stroke:#a79bff; }
+
+  #timer-digital {
+    position:absolute; top:50%; left:50%;
+    transform:translate(-50%, -55%);
+    font-size:38px; font-weight:bold;
+  }
+
+  /* ★ 일시정지 오버레이 ★ */
+  #pause-overlay {
+    position:absolute; top:0; left:0;
+    width:300px; height:300px;
+    background:rgba(0,0,0,0.45);
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:40px; font-weight:bold;
+    color:white;
+    backdrop-filter:blur(2px);
+    display:none;
+    pointer-events:none;
+  }
+
+  /* ★ 일시정지 버튼 – 텍스트, 중앙 정렬, 타이머 오른쪽 아래 ★ */
+  #pause-btn {
+    position: absolute;
+    bottom: -15px; 
+    right: -15px;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    font-size: 30px;
+    font-weight: bold;
+    display:flex; align-items:center; justify-content:center;
+
+    background:#6c63ff; color:white;
+    border:none; cursor:pointer;
+    box-shadow:0 4px 12px rgba(0,0,0,0.25);
+
+    display:none;
+    z-index:99999;
+  }
+  #pause-btn:hover { background:#574ef6; }
+
+  /* 다크모드 버튼 */
+  #dark-toggle {
+    position: fixed; top:20px; right:20px;
+    padding:6px 12px; border-radius:8px;
+    background:#444; color:white; cursor:pointer;
+    border:none; z-index:9999;
+  }
+  body.dark #dark-toggle { background:#888; }
+
+  input[type="text"] { width:80%; padding:10px; border-radius:6px; border:1px solid #ccc; }
+  button { margin-top:10px; padding:10px 16px; border:none; border-radius:8px; background:#6c63ff; color:white; font-size:15px; cursor:pointer; }
+  #skip-btn { background:#e65555; }
+  #reset-btn { background:#e65555; }
+
+  ul { list-style:none; padding:0; margin-left:40px; text-align:left; }
+  li { margin-bottom:10px; display:flex; align-items:center; gap:6px; cursor:pointer; }
+
+</style>
+</head>
+
+<body>
+
+<!-- 왼쪽 패널 -->
+<div id="left-panel">
+  <div id="praise-list"></div>
+  <div id="badge-list"></div>
+</div>
+
+<!-- 오른쪽 메모 패널 -->
+<div id="right-panel">
+  <h3 style="margin-top:0;">메모</h3>
+  <input id="memo-input" type="text" placeholder="메모 작성">
+  <button onclick="addMemo()" style="width:100%;">추가</button>
+  <div id="memo-list"></div>
+</div>
+
+<button id="dark-toggle" onclick="toggleDark()">🌙 다크모드</button>
+
+<h1>ADHD 할 일 시작 도우미</h1>
+
+<div class="container">
+
+  <h3>📌 할 일 등록</h3>
+  <input id="task-input" type="text" placeholder="예: 수학 문제 풀기">
+
+  <h3>진행 중인 할 일</h3>
+  <ul id="task-active"></ul>
+
+  <!-- 타이머 -->
+  <div id="circle-wrapper">
+
+    <svg>
+      <circle id="circle-bg" cx="150" cy="150" r="130"></circle>
+      <circle id="circle-progress" cx="150" cy="150" r="130"></circle>
+    </svg>
+
+    <div id="timer-digital">00:00</div>
+
+    <!-- ★ 일시정지 오버레이 ★ -->
+    <div id="pause-overlay">일시정지</div>
+
+    <!-- ★ 타이머 우측 아래 일시정지 버튼 ★ -->
+    <button id="pause-btn" onclick="togglePause()">▶</button>
+
+  </div>
+
+  <button onclick="startAll()">시작하기</button>
+  <button id="reset-btn" onclick="resetAll()">전체 리셋</button>
+  <button id="skip-btn" onclick="skip20()" style="display:none;">20초 스킵</button>
+
+  <div id="mini-task" style="margin-top:20px; font-size:20px;"></div>
+
+  <h3>완료된 할 일</h3>
+  <ul id="task-done"></ul>
+
+</div>
+
+<script>
+/* -----------------------------
+   기본 상태
+------------------------------*/
+let tasks = JSON.parse(sessionStorage.getItem("tasks") || "[]");
+let stars = Number(sessionStorage.getItem("stars") || 0);
+let memos = JSON.parse(localStorage.getItem("memos") || "[]");
+
+let praiseMessages = [
+  "와.. 집중력 미쳤다 ✨","와 너 진짜 천재인데?",
+  "오늘 왜 이렇게 멋있냐?","집중력 상태 최상급 ㄷㄷ",
+  "너 오늘 레전드다.","솔직히 천재 맞지?",
+  "완전 집중력 폭발 ⚡","이 정도면 인간계 아님;",
+  "너 오늘 뭐 먹었음??"
+];
+
+let miniTasks = [
+  "종이 한 장 치우기","연필 하나 정리하기",
+  "문제집 펼치기","쓰레기 하나 버리기","물 한 모금 마시기"
+];
+
+let baseTime = 900;
+let fifteenLeft = baseTime;
+let twentyTimer = null;
+let fifteenTimer = null;
+
+/* ★ 일시정지 상태 ★ */
+let isPaused = false;
+
+/* 초기 렌더 */
+renderTasks(); renderBadges(); renderMemos();
+if(localStorage.getItem("dark")==="true") document.body.classList.add("dark");
+
+/* 다크모드 */
+function toggleDark(){
+  document.body.classList.toggle("dark");
+  localStorage.setItem("dark", document.body.classList.contains("dark"));
+}
+
+/* 메모 */
+document.getElementById("memo-input").addEventListener("keypress",e=>{
+  if(e.key==="Enter") addMemo();
+});
+function addMemo(){
+  let t=document.getElementById("memo-input").value.trim();
+  if(!t) return;
+  memos.push(t);
+  localStorage.setItem("memos", JSON.stringify(memos));
+  document.getElementById("memo-input").value="";
+  renderMemos();
+}
+function deleteMemo(i){
+  memos.splice(i,1);
+  localStorage.setItem("memos", JSON.stringify(memos));
+  renderMemos();
+}
+function renderMemos(){
+  const L=document.getElementById("memo-list");
+  L.innerHTML="";
+  memos.forEach((m,i)=>{
+    L.innerHTML+=`<div class="memo-item"><span>${m}</span><span class="memo-del" onclick="deleteMemo(${i})">X</span></div>`;
+  });
+}
+
+/* 할일 */
+document.getElementById("task-input").addEventListener("keypress",e=>{
+  if(e.key==="Enter") addTask();
+});
+function addTask(){
+  let t=document.getElementById("task-input").value.trim();
+  if(!t) return;
+  tasks.push({text:t, done:false});
+  save(); renderTasks();
+  document.getElementById("task-input").value="";
+}
+
+function renderTasks(){
+  const active=document.getElementById("task-active");
+  const done=document.getElementById("task-done");
+  active.innerHTML=""; done.innerHTML="";
+
+  tasks.forEach((t,i)=>{
+    let li=document.createElement("li");
+    li.setAttribute("onclick",`toggleTask(${i})`);
+
+    li.innerHTML=`
+      <input type="checkbox" ${t.done?"checked":""}
+        onclick="event.stopPropagation(); toggleTask(${i})">
+      <span>${t.done?"<s>"+t.text+"</s>":t.text}</span>
+    `;
+
+    if(t.done) done.appendChild(li); 
+    else active.appendChild(li);
+  });
+}
+
+function toggleTask(i){
+  tasks[i].done=!tasks[i].done;
+  save(); renderTasks();
+  if(tasks[i].done){
+    showPraise(); addStar(); handleTimerAfterComplete();
+  }
+}
+
+function save(){
+  sessionStorage.setItem("tasks", JSON.stringify(tasks));
+  sessionStorage.setItem("stars", stars);
+}
+
+/* 칭찬 */
+function showPraise(){
+  const A=document.getElementById("praise-list");
+  let box=document.createElement("div");
+  box.className="praise-msg";
+  box.innerText=praiseMessages[Math.floor(Math.random()*praiseMessages.length)];
+  A.appendChild(box);
+  setTimeout(()=>box.remove(),2200);
+}
+
+/* 배지 */
+function addStar(){
+  stars++; save(); renderBadges();
+}
+function renderBadges(){
+  const area=document.getElementById("badge-list");
+  area.innerHTML="";
+  let comet=Math.floor(stars/6);
+  let starR=stars%6;
+
+  for(let i=0;i<comet;i++) area.innerHTML+=`<div class="badge-big">🌠</div>`;
+  for(let i=0;i<starR;i++) area.innerHTML+=`<div class="badge">⭐</div>`;
+}
+
+/* 타이머 */
+function startAll(){
+  if(tasks.filter(t=>!t.done).length===0) return alert("할 일이 없습니다!");
+
+  generateMiniTask();
+  document.getElementById("circle-wrapper").style.display="block";
+  document.getElementById("skip-btn").style.display="inline-block";
+  document.getElementById("pause-btn").style.display="flex";  // 버튼 표시
+
+  start20();
+}
+
+function generateMiniTask(){
+  document.getElementById("mini-task").innerText="👉 지금 할 행동: "+miniTasks[Math.floor(Math.random()*miniTasks.length)];
+}
+
+function start20(){
+  stopAllTimers();
+  let s=20; updateDigital(s);
+
+  twentyTimer=setInterval(()=>{
+    if(isPaused) return;
+    s--; updateDigital(s);
+
+    if(s<=0){
+      clearInterval(twentyTimer);
+      document.getElementById("mini-task").innerText="";
+      document.getElementById("skip-btn").style.display="none";
+      start15();
+    }
+  },1000);
+}
+
+function skip20(){
+  clearInterval(twentyTimer);
+  document.getElementById("mini-task").innerText="";
+  document.getElementById("skip-btn").style.display="none";
+  start15();
+}
+
+function start15(){
+  fifteenLeft=baseTime;
+
+  fifteenTimer=setInterval(()=>{
+    if(isPaused) return;
+    fifteenLeft--; updateAnalog(); updateDigital(fifteenLeft);
+
+    if(fifteenLeft<=0){
+      addStar(); fifteenLeft=baseTime;
+    }
+  },1000);
+}
+
+function reset15(){ clearInterval(fifteenTimer); start15(); }
+
+/* ★ 할일 완료 시 타이머 처리 */
+function handleTimerAfterComplete(){
+  if(twentyTimer){
+    clearInterval(twentyTimer);
+    document.getElementById("mini-task").innerText="";
+    document.getElementById("skip-btn").style.display="none";
+  }
+  reset15();
+}
+
+/* ★ 일시정지 기능 */
+function togglePause(){
+  isPaused=!isPaused;
+
+  const overlay=document.getElementById("pause-overlay");
+  const btn=document.getElementById("pause-btn");
+
+  if(isPaused){
+    overlay.style.display="flex";
+    btn.innerText="❚❚";   // 일시정지 상태
+  } else {
+    overlay.style.display="none";
+    btn.innerText="▶";    // 재생 상태
+  }
+}
+
+/* UI */
+function updateDigital(sec){
+  document.getElementById("timer-digital").innerText =
+    String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0");
+}
+
+function updateAnalog(){
+  const c=document.getElementById("circle-progress");
+  const r=130; const circ=2*Math.PI*r;
+  c.style.strokeDasharray=circ;
+  c.style.strokeDashoffset=circ*(1 - fifteenLeft/baseTime);
+}
+
+/* 리셋 */
+function resetAll(){
+  tasks=[]; stars=0;
+  sessionStorage.setItem("tasks","[]");
+  sessionStorage.setItem("stars","0");
+
+  stopAllTimers();
+  document.getElementById("mini-task").innerText="";
+  document.getElementById("circle-wrapper").style.display="none";
+  document.getElementById("pause-btn").style.display="none";
+  document.getElementById("pause-overlay").style.display="none";
+  isPaused=false;
+
+  renderTasks(); renderBadges();
+}
+
+function stopAllTimers(){
+  clearInterval(twentyTimer); clearInterval(fifteenTimer);
+  twentyTimer=null; fifteenTimer=null;
+}
+
+</script>
+
+</body>
+</html>
