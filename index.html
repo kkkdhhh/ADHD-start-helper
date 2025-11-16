@@ -219,8 +219,8 @@
 /* -----------------------------
    기본 상태
 ------------------------------*/
-let tasks = JSON.parse(sessionStorage.getItem("tasks") || "[]");
-let stars = Number(sessionStorage.getItem("stars") || 0);
+let tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+let stars = Number(localStorage.getItem("stars") || 0);
 let memos = JSON.parse(localStorage.getItem("memos") || "[]");
 
 let praiseMessages = [
@@ -320,8 +320,8 @@ function toggleTask(i){
 }
 
 function save(){
-  sessionStorage.setItem("tasks", JSON.stringify(tasks));
-  sessionStorage.setItem("stars", stars);
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  localStorage.setItem("stars", stars);
 }
 
 /* 칭찬 */
@@ -445,8 +445,8 @@ function updateAnalog(){
 /* 리셋 */
 function resetAll(){
   tasks=[]; stars=0;
-  sessionStorage.setItem("tasks","[]");
-  sessionStorage.setItem("stars","0");
+  localStorage.setItem("tasks","[]");
+  localStorage.setItem("stars","0");
 
   stopAllTimers();
   document.getElementById("mini-task").innerText="";
